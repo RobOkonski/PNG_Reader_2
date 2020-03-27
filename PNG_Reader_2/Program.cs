@@ -10,16 +10,27 @@ namespace PNG_Reader_2
         {
             PNG_signs signs = new PNG_signs();
             Queue<Chunk> chunks = new Queue<Chunk>();
+            Queue<Chunk> chunksToWrite = new Queue<Chunk>();
 
             string fileName = "data\\adaptive.png";
             string newFileName = "data\\test.png";
 
-            Read(signs,chunks,fileName);
-            WriteAndDisplay(signs, chunks, newFileName);
+            Read(signs, chunks, chunksToWrite, fileName);
+            Display(chunks);
+            Write(signs, chunksToWrite, newFileName);
 
         }
 
-        public static void WriteAndDisplay(PNG_signs signs, Queue<Chunk> chunks, string fileName)
+        public static void Display(Queue<Chunk> chunks)
+        {
+            Console.WriteLine("[PNG]");
+            while (chunks.Count != 0)
+            {
+                chunks.Dequeue().Display();
+            }
+        }
+
+        public static void Write(PNG_signs signs, Queue<Chunk> chunks, string fileName)
         {
             string fileDir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
             string filePath = Path.Combine(fileDir, fileName);
@@ -29,15 +40,12 @@ namespace PNG_Reader_2
             NewPicture.Write(signs.bytePNG_sign);
             while (chunks.Count != 0)
             {
-                Chunk chunk;
-                chunk = chunks.Dequeue();
-                chunk.Display();
-                chunk.Write(NewPicture);
+                chunks.Dequeue().Write(NewPicture);
             }
             NewPicture.Close();
         }
 
-        public static void Read(PNG_signs signs, Queue<Chunk> chunks, string fileName)
+        public static void Read(PNG_signs signs, Queue<Chunk> chunks, Queue<Chunk> chunksToWrite, string fileName)
         {
             string fileDir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
             string filePath = Path.Combine(fileDir, fileName);
@@ -48,7 +56,6 @@ namespace PNG_Reader_2
             {
                 Console.WriteLine("Wczytany plik nie jest obrazem PNG");
             }
-            Console.WriteLine("[PNG]");
 
             bool endOfFile = true;
 
@@ -62,34 +69,44 @@ namespace PNG_Reader_2
                 {
                     IHDR ihdr = new IHDR(chunk);
                     chunks.Enqueue(ihdr);
+                    chunksToWrite.Enqueue(ihdr);
                 }
                 else if (chunk.sign == "PLTE")
                 {
                     PLTE plte = new PLTE(chunk);
                     chunks.Enqueue(plte);
+                    chunksToWrite.Enqueue(plte);
                 }
                 else if (chunk.sign == "gAMA")
                 {
                     gAMA gama = new gAMA(chunk);
                     chunks.Enqueue(gama);
+                    //chunksToWrite.Enqueue(gama);
                 }
                 else if (chunk.sign == "cHRM")
                 {
                     cHRM chrm = new cHRM(chunk);
                     chunks.Enqueue(chrm);
+                    //chunksToWrite.Enqueue(chrm);
                 }
                 else if (chunk.sign == "IDAT")
                 {
                     IDAT idat = new IDAT(chunk);
                     chunks.Enqueue(idat);
+                    chunksToWrite.Enqueue(idat);
                 }
                 else if (chunk.sign == "IEND")
                 {
                     IEND iend = new IEND(chunk);
                     chunks.Enqueue(iend);
+                    chunksToWrite.Enqueue(iend);
                     endOfFile = false;
                 }
-                else chunks.Enqueue(chunk);
+                else
+                {
+                    chunks.Enqueue(chunk);
+                    //chunksToWrite.Enqueue(chunk);
+                }
 
             } while (endOfFile);
 
