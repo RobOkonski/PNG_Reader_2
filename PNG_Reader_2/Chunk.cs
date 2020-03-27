@@ -17,6 +17,7 @@ namespace PNG_Reader_2
 
         ASCIIEncoding ascii = new ASCIIEncoding();
 
+
         public void Read(BinaryReader Picture)
         {
             byteLength = Picture.ReadBytes(4);
@@ -35,9 +36,10 @@ namespace PNG_Reader_2
             NewPicture.Write(byteCheckSum);
         }
 
-        public void Display()
+        virtual public void Display()
         {
-            Console.WriteLine("[{0}]",sign);
+            Console.WriteLine("\n[{0}] byteLength: {1}\n", sign, length);
+            Console.WriteLine(BitConverter.ToString(byteData));
         }
 
 
