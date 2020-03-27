@@ -12,7 +12,7 @@ namespace PNG_Reader_2
             Queue<Chunk> chunks = new Queue<Chunk>();
             Queue<Chunk> chunksToWrite = new Queue<Chunk>();
 
-            string fileName = "data\\adaptive.png";
+            string fileName = "data\\camaro.png";
             string newFileName = "data\\test.png";
 
             Read(signs, chunks, chunksToWrite, fileName);
@@ -77,18 +77,6 @@ namespace PNG_Reader_2
                     chunks.Enqueue(plte);
                     chunksToWrite.Enqueue(plte);
                 }
-                else if (chunk.sign == "gAMA")
-                {
-                    gAMA gama = new gAMA(chunk);
-                    chunks.Enqueue(gama);
-                    //chunksToWrite.Enqueue(gama);
-                }
-                else if (chunk.sign == "cHRM")
-                {
-                    cHRM chrm = new cHRM(chunk);
-                    chunks.Enqueue(chrm);
-                    //chunksToWrite.Enqueue(chrm);
-                }
                 else if (chunk.sign == "IDAT")
                 {
                     IDAT idat = new IDAT(chunk);
@@ -102,10 +90,19 @@ namespace PNG_Reader_2
                     chunksToWrite.Enqueue(iend);
                     endOfFile = false;
                 }
+                else if (chunk.sign == "gAMA")
+                {
+                    gAMA gama = new gAMA(chunk);
+                    chunks.Enqueue(gama);
+                }
+                else if (chunk.sign == "cHRM")
+                {
+                    cHRM chrm = new cHRM(chunk);
+                    chunks.Enqueue(chrm);
+                }
                 else
                 {
                     chunks.Enqueue(chunk);
-                    //chunksToWrite.Enqueue(chunk);
                 }
 
             } while (endOfFile);
