@@ -32,7 +32,7 @@ namespace PNG_Reader_2
         {
             NewPicture.Write(byteLength);
             NewPicture.Write(byteSign);
-            NewPicture.Write(byteData);
+            if(length>0) NewPicture.Write(byteData);
             NewPicture.Write(byteCheckSum);
         }
 

@@ -12,27 +12,44 @@ namespace PNG_Reader_2
             Queue<Chunk> chunks = new Queue<Chunk>();
 
             string fileName = "data\\adaptive.png";
+            string newFileName = "data\\test.png";
+
+            Read(signs,chunks,fileName);
+            WriteAndDisplay(signs, chunks, newFileName);
+
+        }
+
+        public static void WriteAndDisplay(PNG_signs signs, Queue<Chunk> chunks, string fileName)
+        {
+            string fileDir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
+            string filePath = Path.Combine(fileDir, fileName);
+
+            BinaryWriter NewPicture = new BinaryWriter(File.OpenWrite(filePath));
+
+            NewPicture.Write(signs.bytePNG_sign);
+            while (chunks.Count != 0)
+            {
+                Chunk chunk;
+                chunk = chunks.Dequeue();
+                chunk.Display();
+                chunk.Write(NewPicture);
+            }
+            NewPicture.Close();
+        }
+
+        public static void Read(PNG_signs signs, Queue<Chunk> chunks, string fileName)
+        {
             string fileDir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
             string filePath = Path.Combine(fileDir, fileName);
 
             BinaryReader Picture = new BinaryReader(File.OpenRead(filePath));
 
-            if(!(signs.IsPNG(Picture)))
+            if (!(signs.IsPNG(Picture)))
             {
                 Console.WriteLine("Wczytany plik nie jest obrazem PNG");
             }
             Console.WriteLine("[PNG]");
 
-            Read(Picture,chunks);
-
-            while(chunks.Count != 0)
-            {
-                chunks.Dequeue().Display();
-            }
-        }
-
-        public static void Read(BinaryReader Picture, Queue<Chunk> chunks)
-        {
             bool endOfFile = true;
 
             do
@@ -75,6 +92,8 @@ namespace PNG_Reader_2
                 else chunks.Enqueue(chunk);
 
             } while (endOfFile);
+
+            Picture.Close();
         }
     }
 }
