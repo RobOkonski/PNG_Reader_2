@@ -2,7 +2,9 @@
 using System.IO;
 using System.Collections.Generic;
 using Extreme.Mathematics.SignalProcessing;
-using ComponentAce.Compression.Libs.zlib;
+//using ComponentAce.Compression.Libs.zlib;
+//using System.IO.Compression;
+using ICSharpCode.SharpZipLib.Zip.Compression;
 
 namespace PNG_Reader_2
 {
@@ -14,13 +16,12 @@ namespace PNG_Reader_2
             Queue<Chunk> chunks = new Queue<Chunk>();
             Queue<Chunk> chunksToWrite = new Queue<Chunk>();
 
-            string fileName = "data\\png.png";
+            string fileName = "data\\exif.png";
             string newFileName = "data\\test.png";
 
             Read(signs, chunks, chunksToWrite, fileName);
             Display(chunks);
             Write(signs, chunksToWrite, newFileName);
-
         }
 
         public static void Display(Queue<Chunk> chunks)
@@ -49,6 +50,8 @@ namespace PNG_Reader_2
 
         public static void Read(PNG_signs signs, Queue<Chunk> chunks, Queue<Chunk> chunksToWrite, string fileName)
         {
+            Deflater defl = new Deflater();
+
             string fileDir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
             string filePath = Path.Combine(fileDir, fileName);
 
