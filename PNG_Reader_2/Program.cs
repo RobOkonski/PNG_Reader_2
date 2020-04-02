@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
+using Extreme.Mathematics.SignalProcessing;
+using ComponentAce.Compression.Libs.zlib;
 
 namespace PNG_Reader_2
 {
@@ -12,7 +14,7 @@ namespace PNG_Reader_2
             Queue<Chunk> chunks = new Queue<Chunk>();
             Queue<Chunk> chunksToWrite = new Queue<Chunk>();
 
-            string fileName = "data\\exif.png";
+            string fileName = "data\\png.png";
             string newFileName = "data\\test.png";
 
             Read(signs, chunks, chunksToWrite, fileName);

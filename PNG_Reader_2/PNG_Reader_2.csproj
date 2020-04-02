@@ -9,4 +9,9 @@
     <Folder Include="data\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Extreme.Numerics" Version="7.0.12" />
+    <PackageReference Include="zlib.net-mutliplatform" Version="1.0.4" />
+  </ItemGroup>
+
 </Project>

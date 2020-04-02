@@ -39,7 +39,7 @@ namespace PNG_Reader_2
         virtual public void Display()
         {
             Console.WriteLine("\n[{0}] byteLength: {1}\n", sign, length);
-           // Console.WriteLine(BitConverter.ToString(byteData));
+            //Console.WriteLine(BitConverter.ToString(byteData));
         }
 
 
