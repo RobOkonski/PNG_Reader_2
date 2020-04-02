@@ -12,7 +12,7 @@ namespace PNG_Reader_2
             Queue<Chunk> chunks = new Queue<Chunk>();
             Queue<Chunk> chunksToWrite = new Queue<Chunk>();
 
-            string fileName = "data\\camaro.png";
+            string fileName = "data\\exif.png";
             string newFileName = "data\\test.png";
 
             Read(signs, chunks, chunksToWrite, fileName);
