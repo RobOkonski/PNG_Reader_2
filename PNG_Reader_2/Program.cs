@@ -1,10 +1,12 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Drawing;
 using Extreme.Mathematics.SignalProcessing;
 //using ComponentAce.Compression.Libs.zlib;
 //using System.IO.Compression;
 using ICSharpCode.SharpZipLib.Zip.Compression;
+using System.Diagnostics;
 
 namespace PNG_Reader_2
 {
@@ -22,6 +24,29 @@ namespace PNG_Reader_2
             Read(signs, chunks, chunksToWrite, fileName);
             Display(chunks);
             Write(signs, chunksToWrite, newFileName);
+
+            DisplayImage(fileName);
+        }
+
+        public static void DisplayImage(string fileName)
+        {
+            string fileDir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
+            string filePath = Path.Combine(fileDir, fileName);
+
+            ProcessStartInfo info = new ProcessStartInfo();
+            info.FileName = Path.Combine("ms-photos://",filePath);
+            info.UseShellExecute = true;
+            info.CreateNoWindow = true;
+            info.Verb = string.Empty;
+
+            Process.Start(info);
+
+            /*Console.WriteLine("Wyświetlam obraz");
+            Bitmap picture = new Bitmap(filePath);
+            Graphics graphics = Graphics.FromImage(picture);
+            graphics.DrawImage(picture,0,0);
+            Console.WriteLine("Wyświetliłem obraz");*/
+
         }
 
         public static void Display(Queue<Chunk> chunks)
@@ -50,7 +75,7 @@ namespace PNG_Reader_2
 
         public static void Read(PNG_signs signs, Queue<Chunk> chunks, Queue<Chunk> chunksToWrite, string fileName)
         {
-            Deflater defl = new Deflater();
+            Inflater infl = new Inflater();
 
             string fileDir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
             string filePath = Path.Combine(fileDir, fileName);
