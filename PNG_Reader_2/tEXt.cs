@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace PNG_Reader_2
@@ -26,7 +25,6 @@ namespace PNG_Reader_2
             {
                 i++;
             }
-            Console.WriteLine(i);
 
             keyword = ascii.GetString(byteData, 0, i);
             text = iso.GetString(byteData, i+1, length-i-1);

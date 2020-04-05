@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections;
-using System.Text;
 
 namespace PNG_Reader_2
 {

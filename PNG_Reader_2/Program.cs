@@ -2,14 +2,9 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Drawing;
-using Extreme.Mathematics.SignalProcessing;
-//using ComponentAce.Compression.Libs.zlib;
-//using System.IO.Compression;
-using ICSharpCode.SharpZipLib.Zip.Compression;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using AForge.Imaging;
-using ImageMagick;
 
 namespace PNG_Reader_2
 {
@@ -21,7 +16,7 @@ namespace PNG_Reader_2
             Queue<Chunk> chunks = new Queue<Chunk>();
             Queue<Chunk> chunksToWrite = new Queue<Chunk>();
 
-            string fileName = Start();// "data\\camaro.png";
+            string fileName = Start();
             string newFileName = "data\\test.png";
 
             Read(signs, chunks, chunksToWrite, fileName);

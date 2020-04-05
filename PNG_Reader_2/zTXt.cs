@@ -27,7 +27,6 @@ namespace PNG_Reader_2
             {
                 i++;
             }
-            Console.WriteLine(i);
 
             keyword = ascii.GetString(byteData,0,i);
 
@@ -50,7 +49,6 @@ namespace PNG_Reader_2
                 k++;
             }
             text = iso.GetString(decompressedByteText, 0, k);
-            //text = BitConverter.ToString(decompressedByteText);
         }
 
         public override void Display()
