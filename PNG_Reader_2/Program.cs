@@ -7,6 +7,8 @@ using Extreme.Mathematics.SignalProcessing;
 //using System.IO.Compression;
 using ICSharpCode.SharpZipLib.Zip.Compression;
 using System.Diagnostics;
+using System.Drawing.Imaging;
+using AForge.Imaging;
 
 namespace PNG_Reader_2
 {
@@ -26,6 +28,78 @@ namespace PNG_Reader_2
             Write(signs, chunksToWrite, newFileName);
 
             DisplayImage(fileName);
+            MakeFFT(fileName);
+        }
+
+        public static int PowerOf2(int x)
+        {
+            int y=2;
+            int temp=1;
+            do
+            {
+                temp *= 2;
+                if (temp < x) y = temp;
+            } while (temp < x);
+            return y;
+        }
+
+        public static void MakeFFT(string fileName)
+        {
+            string fileDir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
+            string filePath = Path.Combine(fileDir, fileName);
+
+            Bitmap org = new Bitmap(filePath);
+
+            int width = PowerOf2(org.Width);
+            int height = PowerOf2(org.Height);
+
+            Bitmap bmp = new Bitmap(org,width,height);
+            Color p;
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    p = bmp.GetPixel(x, y);
+                    int a = p.A;
+                    int r = p.R;
+                    int g = p.G;
+                    int b = p.B;
+                    int avg = (r + g + b) / 3;
+                    bmp.SetPixel(x, y, Color.FromArgb(a, avg, avg, avg));
+                }
+            }
+            Bitmap gray = ConvertPixelformat(bmp);
+
+            ComplexImage complexImage = ComplexImage.FromBitmap(gray);
+            complexImage.ForwardFourierTransform();
+            Bitmap fourierImage = complexImage.ToBitmap();
+
+            string fftFileName = "data\\fft.png";
+            string fftFilePath = Path.Combine(fileDir, fftFileName);
+            fourierImage.Save(fftFilePath);
+
+            DisplayImage(fftFilePath);
+
+        }
+
+        private static Bitmap ConvertPixelformat(Bitmap Bmp)
+        {
+            Bitmap myBitmap = new Bitmap(Bmp);
+            Rectangle cloneRect = new Rectangle(0, 0, Bmp.Width, Bmp.Height);
+            PixelFormat format = PixelFormat.Format8bppIndexed;
+            Bitmap cloneBitmap = myBitmap.Clone(cloneRect, format);
+            var pal = cloneBitmap.Palette;
+
+            for (int i = 0; i < cloneBitmap.Palette.Entries.Length; ++i)
+            {
+                var entry = cloneBitmap.Palette.Entries[i];
+                var gray = (int)(0.30 * entry.R + 0.59 * entry.G + 0.11 * entry.B);
+                pal.Entries[i] = Color.FromArgb(gray, gray, gray);
+            }
+            cloneBitmap.Palette = pal;
+            cloneBitmap.SetResolution(500.0F, 500.0F);
+            return cloneBitmap;
         }
 
         public static void DisplayImage(string fileName)
@@ -40,13 +114,6 @@ namespace PNG_Reader_2
             info.Verb = string.Empty;
 
             Process.Start(info);
-
-            /*Console.WriteLine("Wyświetlam obraz");
-            Bitmap picture = new Bitmap(filePath);
-            Graphics graphics = Graphics.FromImage(picture);
-            graphics.DrawImage(picture,0,0);
-            Console.WriteLine("Wyświetliłem obraz");*/
-
         }
 
         public static void Display(Queue<Chunk> chunks)
