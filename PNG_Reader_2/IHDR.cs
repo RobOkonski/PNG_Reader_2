@@ -40,10 +40,23 @@ namespace PNG_Reader_2
             Console.WriteLine(" - width: {0}", width);
             Console.WriteLine(" - height: {0}", height);
             Console.WriteLine(" - bitDepth: {0}", bitDepth);
-            Console.WriteLine(" - colorType: {0}", colorType);
-            Console.WriteLine(" - compresionMethod: {0}", compresionMethod);
-            Console.WriteLine(" - filterMethod: {0}", filterMethod);
-            Console.WriteLine(" - interlanceMethod: {0}", interlanceMethod);
+
+            if (colorType==0) Console.WriteLine(" - colorType: {0} - grayscale, allowed bit depths: 1, 2, 4, 8, 16", colorType);
+            else if (colorType == 2) Console.WriteLine(" - colorType: {0} - truecolour, allowed bit depths: 8, 16", colorType);
+            else if (colorType == 3) Console.WriteLine(" - colorType: {0} - indexed-colour, allowed bit depths: 1, 2, 4, 8", colorType);
+            else if (colorType == 4) Console.WriteLine(" - colorType: {0} - greyscale with alpha, allowed bit depths: 8, 16", colorType);
+            else if (colorType == 6) Console.WriteLine(" - colorType: {0} - truecolour with aplha, allowed bit depths: 8, 16", colorType);
+            else Console.WriteLine("error");
+
+            if (compresionMethod==0) Console.WriteLine(" - compresionMethod: {0} - deflate/inflate", compresionMethod);
+            else Console.WriteLine("error");
+
+            if (filterMethod==0) Console.WriteLine(" - filterMethod: {0} - adaptive filtering with five basic filter types", filterMethod);
+            else Console.WriteLine("error");
+
+            if (interlanceMethod==0) Console.WriteLine(" - interlanceMethod: {0} - no interlace", interlanceMethod);
+            else if (interlanceMethod==1) Console.WriteLine(" - interlanceMethod: {0} - Adam7 interlace", interlanceMethod);
+            else Console.WriteLine("error");
         }
     }
 }
