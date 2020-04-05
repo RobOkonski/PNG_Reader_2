@@ -9,6 +9,7 @@ using ICSharpCode.SharpZipLib.Zip.Compression;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using AForge.Imaging;
+using ImageMagick;
 
 namespace PNG_Reader_2
 {
@@ -20,7 +21,7 @@ namespace PNG_Reader_2
             Queue<Chunk> chunks = new Queue<Chunk>();
             Queue<Chunk> chunksToWrite = new Queue<Chunk>();
 
-            string fileName = "data\\exif.png";
+            string fileName = Start();// "data\\camaro.png";
             string newFileName = "data\\test.png";
 
             Read(signs, chunks, chunksToWrite, fileName);
@@ -29,6 +30,72 @@ namespace PNG_Reader_2
 
             DisplayImage(fileName);
             MakeFFT(fileName);
+        }
+
+        public static void Menu()
+        {
+            Console.WriteLine("\n---   MENU   ---\n");
+            Console.WriteLine("1. camaro.png");
+            Console.WriteLine("2. 4colors.png");
+            Console.WriteLine("3. 16colors.png");
+            Console.WriteLine("4. 256colors.png");
+            Console.WriteLine("5. adaptive.png");
+            Console.WriteLine("6. exif.png");
+            Console.WriteLine("7. ogien.png");
+            Console.WriteLine("");
+        }
+
+        public static string Start()
+        {
+            string fileName;
+            string schoice;
+            int choice=0;
+            do
+            {
+                Menu();
+                Console.Write("Choose picture: ");
+                schoice = (Console.ReadLine());
+                Console.WriteLine("");
+                Int32.TryParse(schoice,out choice);
+            } while (choice < 1 || choice > 7);
+
+            switch(choice)
+            {
+                case 1:
+                    Console.WriteLine("camaro.png\n");
+                    fileName = "data\\camaro.png";
+                    break;
+                case 2:
+                    Console.WriteLine("4colors.png\n");
+                    fileName = "data\\4colors.png";
+                    break;
+                case 3:
+                    Console.WriteLine("16colors.png\n");
+                    fileName = "data\\16colors.png";
+                    break;
+                case 4:
+                    Console.WriteLine("256colors.png\n");
+                    fileName = "data\\256colors.png";
+                    break;
+                case 5:
+                    Console.WriteLine("adaptive.png\n");
+                    fileName = "data\\adaptive.png";
+                    break;
+                case 6:
+                    Console.WriteLine("exif.png\n");
+                    fileName = "data\\exif.png";
+                    break;
+                case 7:
+                    Console.WriteLine("ogien.png\n");
+                    fileName = "data\\ogien.png";
+                    break;
+                default:
+                    Console.WriteLine("Undefined picture\n");
+                    fileName = "data\\camaro.png";
+                    break;
+            }
+
+            return fileName;
         }
 
         public static int PowerOf2(int x)
@@ -142,10 +209,9 @@ namespace PNG_Reader_2
 
         public static void Read(PNG_signs signs, Queue<Chunk> chunks, Queue<Chunk> chunksToWrite, string fileName)
         {
-            Inflater infl = new Inflater();
-
             string fileDir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
             string filePath = Path.Combine(fileDir, fileName);
+            int idatQuantity = 0;
 
             BinaryReader Picture = new BinaryReader(File.OpenRead(filePath));
 
@@ -158,7 +224,6 @@ namespace PNG_Reader_2
 
             do
             {
-
                 Chunk chunk = new Chunk();
                 chunk.Read(Picture);
 
@@ -176,7 +241,8 @@ namespace PNG_Reader_2
                 }
                 else if (chunk.sign == "IDAT")
                 {
-                    IDAT idat = new IDAT(chunk);
+                    idatQuantity++;
+                    IDAT idat = new IDAT(chunk,idatQuantity);
                     chunks.Enqueue(idat);
                     chunksToWrite.Enqueue(idat);
                 }
