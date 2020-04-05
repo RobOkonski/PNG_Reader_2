@@ -38,9 +38,9 @@ namespace PNG_Reader_2
             else Console.WriteLine("   CM: {0}",CM);
 
             if (FLEVEL == 0) Console.WriteLine("   FLEVEL: {0} - compressor used fastest algorithm", FLEVEL);
-            else if (FLEVEL == 0) Console.WriteLine("   FLEVEL: {0} - compressor used fast algorithm", FLEVEL);
-            else if (FLEVEL == 0) Console.WriteLine("   FLEVEL: {0} - compressor used default algorithm", FLEVEL);
-            else if (FLEVEL == 0) Console.WriteLine("   FLEVEL: {0} - compressor used maximum compression, slowest algorithm", FLEVEL);
+            else if (FLEVEL == 1) Console.WriteLine("   FLEVEL: {0} - compressor used fast algorithm", FLEVEL);
+            else if (FLEVEL == 2) Console.WriteLine("   FLEVEL: {0} - compressor used default algorithm", FLEVEL);
+            else if (FLEVEL == 3) Console.WriteLine("   FLEVEL: {0} - compressor used maximum compression, slowest algorithm", FLEVEL);
             else Console.WriteLine("   FLEVEL: error");
 
             if (FDICT) Console.WriteLine("   FDICT: 1 - preset dictionary");

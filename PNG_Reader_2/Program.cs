@@ -42,6 +42,7 @@ namespace PNG_Reader_2
             Console.WriteLine("5. adaptive.png");
             Console.WriteLine("6. exif.png");
             Console.WriteLine("7. ogien.png");
+            Console.WriteLine("8. ex1.png");
             Console.WriteLine("");
         }
 
@@ -57,7 +58,7 @@ namespace PNG_Reader_2
                 schoice = (Console.ReadLine());
                 Console.WriteLine("");
                 Int32.TryParse(schoice,out choice);
-            } while (choice < 1 || choice > 7);
+            } while (choice < 1 || choice > 8);
 
             switch(choice)
             {
@@ -88,6 +89,10 @@ namespace PNG_Reader_2
                 case 7:
                     Console.WriteLine("ogien.png\n");
                     fileName = "data\\ogien.png";
+                    break;
+                case 8:
+                    Console.WriteLine("ex1.png\n");
+                    fileName = "data\\ex1.png";
                     break;
                 default:
                     Console.WriteLine("Undefined picture\n");
@@ -262,6 +267,16 @@ namespace PNG_Reader_2
                 {
                     cHRM chrm = new cHRM(chunk);
                     chunks.Enqueue(chrm);
+                }
+                else if (chunk.sign == "zTXt")
+                {
+                    zTXt ztxt = new zTXt(chunk);
+                    chunks.Enqueue(ztxt);
+                }
+                else if (chunk.sign == "tEXt")
+                {
+                    tEXt text = new tEXt(chunk);
+                    chunks.Enqueue(text);
                 }
                 else
                 {
