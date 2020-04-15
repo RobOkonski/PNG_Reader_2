@@ -32,7 +32,7 @@ namespace PNG_Reader_2
             Console.WriteLine("\n---   MENU   ---\n");
             Console.WriteLine("1. camaro.png");
             Console.WriteLine("2. 4colors.png");
-            Console.WriteLine("3. 16colors.png");
+            Console.WriteLine("3. rim.png");
             Console.WriteLine("4. 256colors.png");
             Console.WriteLine("5. adaptive.png");
             Console.WriteLine("6. exif.png");
@@ -66,8 +66,8 @@ namespace PNG_Reader_2
                     fileName = "data\\4colors.png";
                     break;
                 case 3:
-                    Console.WriteLine("16colors.png\n");
-                    fileName = "data\\16colors.png";
+                    Console.WriteLine("rim.png\n");
+                    fileName = "data\\rim.png";
                     break;
                 case 4:
                     Console.WriteLine("256colors.png\n");
