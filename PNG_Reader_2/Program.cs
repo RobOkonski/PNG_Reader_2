@@ -12,24 +12,72 @@ namespace PNG_Reader_2
     {
         public static void Main(string[] args)
         {
+            bool end = false;
             PNG_signs signs = new PNG_signs();
             Queue<Chunk> chunks = new Queue<Chunk>();
             Queue<Chunk> chunksToWrite = new Queue<Chunk>();
 
-            string fileName = Start();
+            string fileName = ChoosePicture();
             string newFileName = "data\\test.png";
 
             Read(signs, chunks, chunksToWrite, fileName);
-            Display(chunks);
-            Write(signs, chunksToWrite, newFileName);
 
-            DisplayImage(fileName);
-            MakeFFT(fileName);
+            while(!end)
+            {
+                end = Execute(signs, chunks, chunksToWrite, fileName, newFileName);
+            }
         }
 
-        public static void Menu()
+        public static void ProgramMenu()
         {
             Console.WriteLine("\n---   MENU   ---\n");
+            Console.WriteLine("1. Display chunks");
+            Console.WriteLine("2. Write anonimized picture");
+            Console.WriteLine("3. Display picture");
+            Console.WriteLine("4. Make fft");
+            Console.WriteLine("5. End");
+            Console.WriteLine("");
+        }
+
+        public static bool Execute(PNG_signs signs, Queue<Chunk> chunks, Queue<Chunk> chunksToWrite, string fileName, string newFileName)
+        {
+            string schoice;
+            int choice = 0;
+            do
+            {
+                ProgramMenu();
+                Console.Write("Choose what to do: ");
+                schoice = (Console.ReadLine());
+                Console.WriteLine("");
+                Int32.TryParse(schoice, out choice);
+            } while (choice < 1 || choice > 5);
+
+            switch (choice)
+            {
+                case 1:
+                    Display(chunks);
+                    break;
+                case 2:
+                    Write(signs, chunksToWrite, newFileName);
+                    break;
+                case 3:
+                    DisplayImage(fileName);
+                    break;
+                case 4:
+                    MakeFFT(fileName);
+                    break;
+                case 5:
+                    return true;
+                default:
+                    Console.WriteLine("Undefined operation\n");
+                    break;
+            }
+            return false;
+        }
+
+        public static void PictureMenu()
+        {
+            Console.WriteLine("\n---   Choose picture   ---\n");
             Console.WriteLine("1. camaro.png");
             Console.WriteLine("2. 4colors.png");
             Console.WriteLine("3. rim.png");
@@ -41,14 +89,14 @@ namespace PNG_Reader_2
             Console.WriteLine("");
         }
 
-        public static string Start()
+        public static string ChoosePicture()
         {
             string fileName;
             string schoice;
             int choice=0;
             do
             {
-                Menu();
+                PictureMenu();
                 Console.Write("Choose picture: ");
                 schoice = (Console.ReadLine());
                 Console.WriteLine("");
