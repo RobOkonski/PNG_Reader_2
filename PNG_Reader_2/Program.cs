@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using AForge.Imaging;
+using System.Security.Cryptography;
 
 namespace PNG_Reader_2
 {
@@ -16,16 +17,188 @@ namespace PNG_Reader_2
             PNG_signs signs = new PNG_signs();
             Queue<Chunk> chunks = new Queue<Chunk>();
             Queue<Chunk> chunksToWrite = new Queue<Chunk>();
+            Queue<Chunk> chunksToEncrypt = new Queue<Chunk>();
 
             string fileName = ChoosePicture();
             string newFileName = "data\\test.png";
 
-            Read(signs, chunks, chunksToWrite, fileName);
+            Read(signs, chunks, chunksToWrite, chunksToEncrypt, fileName);
 
             while(!end)
             {
-                end = Execute(signs, chunks, chunksToWrite, fileName, newFileName);
+                end = Execute(signs, chunks, chunksToWrite, chunksToEncrypt, fileName, newFileName);
             }
+        }
+
+        public static void MakeRSA(Queue<Chunk> chunksToEncrypt, PNG_signs signs)
+        {
+            string fileDir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
+            string filePath = Path.Combine(fileDir, "data\\encrypted.png");
+            string filePath2 = Path.Combine(fileDir, "data\\decrypted.png");
+
+            byte[] encryptedData;
+            byte[] decryptedData;
+
+            BinaryWriter EncryptedPicture = new BinaryWriter(File.OpenWrite(filePath));
+            BinaryWriter DecryptedPicture = new BinaryWriter(File.OpenWrite(filePath2));
+
+            EncryptedPicture.Write(signs.bytePNG_sign);
+            DecryptedPicture.Write(signs.bytePNG_sign);
+
+            while (chunksToEncrypt.Count != 0)
+            {
+                var c = chunksToEncrypt.Dequeue();
+                if(c.sign == "IDAT" )
+                {
+                    using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
+                    {
+                        Console.WriteLine(RSA.KeySize);
+                        encryptedData = Encrypt(c.ReturnData(), RSA.ExportParameters(false));
+                        decryptedData = Decrypt(encryptedData, RSA.ExportParameters(true));
+                    }
+                    EncryptedPicture.Write(BitConverter.GetBytes(encryptedData.Length));
+                    EncryptedPicture.Write(c.byteSign);
+                    EncryptedPicture.Write(encryptedData);
+                    EncryptedPicture.Write(c.byteCheckSum);
+
+                    DecryptedPicture.Write(BitConverter.GetBytes(decryptedData.Length));
+                    DecryptedPicture.Write(c.byteSign);
+                    DecryptedPicture.Write(decryptedData);
+                    DecryptedPicture.Write(c.byteCheckSum);
+                }
+                else
+                {
+                    c.Write(EncryptedPicture);
+                    c.Write(DecryptedPicture);
+                }
+            }
+            EncryptedPicture.Close();
+            DecryptedPicture.Close();
+        }
+
+        public static byte[] Encrypt(byte[] encryptThis, RSAParameters publicKeyInfo)
+        {
+            //// Our bytearray to hold all of our data after the encryption
+            byte[] encryptedBytes = new byte[0];
+            using (var RSA = new RSACryptoServiceProvider())
+            {
+                try
+                { 
+                    RSA.ImportParameters(publicKeyInfo);
+
+                    int blockSize = (RSA.KeySize / 8) - 32;
+
+                    //// buffer to write byte sequence of the given block_size
+                    byte[] buffer = new byte[blockSize];
+
+                    byte[] encryptedBuffer = new byte[blockSize];
+
+                    //// Initializing our encryptedBytes array to a suitable size, depending on the size of data to be encrypted
+                    encryptedBytes = new byte[encryptThis.Length + blockSize - (encryptThis.Length % blockSize) + 32];
+
+                    for (int i = 0; i < encryptThis.Length; i += blockSize)
+                    {
+                        //// If there is extra info to be parsed, but not enough to fill out a complete bytearray, fit array for last bit of data
+                        if (2 * i > encryptThis.Length && ((encryptThis.Length - i) % blockSize != 0))
+                        {
+                            buffer = new byte[encryptThis.Length - i];
+                            blockSize = encryptThis.Length - i;
+                        }
+
+                        //// If the amount of bytes we need to decrypt isn't enough to fill out a block, only decrypt part of it
+                        if (encryptThis.Length < blockSize)
+                        {
+                            buffer = new byte[encryptThis.Length];
+                            blockSize = encryptThis.Length;
+                        }
+
+                        //// encrypt the specified size of data, then add to final array.
+                        Buffer.BlockCopy(encryptThis, i, buffer, 0, blockSize);
+                        encryptedBuffer = RSA.Encrypt(buffer, false);
+                        encryptedBuffer.CopyTo(encryptedBytes, i);
+                    }
+                }
+                catch (CryptographicException e)
+                {
+                    Console.Write(e);
+                }
+                finally
+                {
+                    //// Clear the RSA key container, deleting generated keys.
+                    RSA.PersistKeyInCsp = false;
+                }
+            }
+            //// Convert the byteArray using Base64 and returns as an encrypted string
+            return encryptedBytes;
+        }
+
+        /// <summary>
+        /// Decrypt this message using this key
+        /// </summary>
+        /// <param name="dataToDecrypt">
+        /// The data To decrypt.
+        /// </param>
+        /// <param name="privateKeyInfo">
+        /// The private Key Info.
+        /// </param>
+        /// <returns>
+        /// The decrypted data.
+        /// </returns>
+        public static byte[] Decrypt(byte[] bytesToDecrypt, RSAParameters privateKeyInfo)
+        {
+            //// The bytearray to hold all of our data after decryption
+            byte[] decryptedBytes;
+
+            //Create a new instance of RSACryptoServiceProvider.
+            using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
+            {
+                try
+                {
+                    //// Import the private key info
+                    RSA.ImportParameters(privateKeyInfo);
+
+                    //// No need to subtract padding size when decrypting (OR do I?)
+                    int blockSize = RSA.KeySize / 8;
+
+                    //// buffer to write byte sequence of the given block_size
+                    byte[] buffer = new byte[blockSize];
+
+                    //// buffer containing decrypted information
+                    byte[] decryptedBuffer = new byte[blockSize];
+
+                    //// Initializes our array to make sure it can hold at least the amount needed to decrypt.
+                    decryptedBytes = new byte[bytesToDecrypt.Length];
+
+                    for (int i = 0; i < bytesToDecrypt.Length; i += blockSize)
+                    {
+                        if (2 * i > bytesToDecrypt.Length && ((bytesToDecrypt.Length - i) % blockSize != 0))
+                        {
+                            buffer = new byte[bytesToDecrypt.Length - i];
+                            blockSize = bytesToDecrypt.Length - i;
+                        }
+
+                        //// If the amount of bytes we need to decrypt isn't enough to fill out a block, only decrypt part of it
+                        if (bytesToDecrypt.Length < blockSize)
+                        {
+                            buffer = new byte[bytesToDecrypt.Length];
+                            blockSize = bytesToDecrypt.Length;
+                        }
+
+                        Buffer.BlockCopy(bytesToDecrypt, i, buffer, 0, blockSize);
+                        decryptedBuffer = RSA.Decrypt(buffer, false);
+                        decryptedBuffer.CopyTo(decryptedBytes, i);
+                    }
+                }
+                finally
+                {
+                    //// Clear the RSA key container, deleting generated keys.
+                    RSA.PersistKeyInCsp = false;
+                }
+            }
+
+            //// We encode each byte with UTF8 and then write to a string while trimming off the extra empty data created by the overhead.
+            return decryptedBytes;
+
         }
 
         public static void ProgramMenu()
@@ -35,11 +208,12 @@ namespace PNG_Reader_2
             Console.WriteLine("2. Write anonimized picture");
             Console.WriteLine("3. Display picture");
             Console.WriteLine("4. Make fft");
-            Console.WriteLine("5. End");
+            Console.WriteLine("5. Make RSA");
+            Console.WriteLine("6. End");
             Console.WriteLine("");
         }
 
-        public static bool Execute(PNG_signs signs, Queue<Chunk> chunks, Queue<Chunk> chunksToWrite, string fileName, string newFileName)
+        public static bool Execute(PNG_signs signs, Queue<Chunk> chunks, Queue<Chunk> chunksToWrite, Queue<Chunk> chunksToEncrypt, string fileName, string newFileName)
         {
             string schoice;
             int choice = 0;
@@ -67,6 +241,9 @@ namespace PNG_Reader_2
                     MakeFFT(fileName);
                     break;
                 case 5:
+                    MakeRSA(chunksToEncrypt, signs);
+                    break;
+                case 6:
                     return true;
                 default:
                     Console.WriteLine("Undefined operation\n");
@@ -255,7 +432,7 @@ namespace PNG_Reader_2
             NewPicture.Close();
         }
 
-        public static void Read(PNG_signs signs, Queue<Chunk> chunks, Queue<Chunk> chunksToWrite, string fileName)
+        public static void Read(PNG_signs signs, Queue<Chunk> chunks, Queue<Chunk> chunksToWrite, Queue<Chunk> chunksToEncrypt, string fileName)
         {
             string fileDir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
             string filePath = Path.Combine(fileDir, fileName);
@@ -280,12 +457,14 @@ namespace PNG_Reader_2
                     IHDR ihdr = new IHDR(chunk);
                     chunks.Enqueue(ihdr);
                     chunksToWrite.Enqueue(ihdr);
+                    chunksToEncrypt.Enqueue(ihdr);
                 }
                 else if (chunk.sign == "PLTE")
                 {
                     PLTE plte = new PLTE(chunk);
                     chunks.Enqueue(plte);
                     chunksToWrite.Enqueue(plte);
+                    chunksToEncrypt.Enqueue(plte);
                 }
                 else if (chunk.sign == "IDAT")
                 {
@@ -293,37 +472,44 @@ namespace PNG_Reader_2
                     IDAT idat = new IDAT(chunk,idatQuantity);
                     chunks.Enqueue(idat);
                     chunksToWrite.Enqueue(idat);
+                    chunksToEncrypt.Enqueue(idat);
                 }
                 else if (chunk.sign == "IEND")
                 {
                     IEND iend = new IEND(chunk);
                     chunks.Enqueue(iend);
                     chunksToWrite.Enqueue(iend);
+                    chunksToEncrypt.Enqueue(iend);
                     endOfFile = false;
                 }
                 else if (chunk.sign == "gAMA")
                 {
                     gAMA gama = new gAMA(chunk);
                     chunks.Enqueue(gama);
+                    chunksToEncrypt.Enqueue(gama);
                 }
                 else if (chunk.sign == "cHRM")
                 {
                     cHRM chrm = new cHRM(chunk);
                     chunks.Enqueue(chrm);
+                    chunksToEncrypt.Enqueue(chrm);
                 }
                 else if (chunk.sign == "zTXt")
                 {
                     zTXt ztxt = new zTXt(chunk);
                     chunks.Enqueue(ztxt);
+                    chunksToEncrypt.Enqueue(ztxt);
                 }
                 else if (chunk.sign == "tEXt")
                 {
                     tEXt text = new tEXt(chunk);
                     chunks.Enqueue(text);
+                    chunksToEncrypt.Enqueue(text);
                 }
                 else
                 {
                     chunks.Enqueue(chunk);
+                    chunksToEncrypt.Enqueue(chunk);
                 }
 
             } while (endOfFile);

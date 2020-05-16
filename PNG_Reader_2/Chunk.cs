@@ -27,7 +27,7 @@ namespace PNG_Reader_2
             byteCheckSum = Picture.ReadBytes(4); 
         }
 
-        public void Write(BinaryWriter NewPicture)
+        virtual public void Write(BinaryWriter NewPicture)
         {
             NewPicture.Write(byteLength);
             NewPicture.Write(byteSign);
@@ -41,6 +41,9 @@ namespace PNG_Reader_2
             //Console.WriteLine(BitConverter.ToString(byteData));
         }
 
-
+        virtual public byte[] ReturnData()
+        {
+            return byteData;
+        }
     }
 }
