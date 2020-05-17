@@ -78,12 +78,6 @@ namespace PNG_Reader_2
                     encryptedData = encrypted.SelectMany(a => a).ToArray();
                     decryptedData = decrypted.SelectMany(a => a).ToArray();
 
-                    Console.WriteLine("{0} {1}", data.Length, decryptedData.Length);
-                    Console.WriteLine("\n\n\n");
-                    foreach (byte b in data) Console.Write(b);
-                    Console.WriteLine("\n\n\n");
-                    foreach (byte b in decryptedData) Console.Write(b);
-
                     Deflater defl = new Deflater();
                     defl.SetInput(encryptedData);
                     defl.SetLevel(((IDAT)c).compression.FLEVEL);
