@@ -7,6 +7,7 @@ using System.Drawing.Imaging;
 using AForge.Imaging;
 using System.Security.Cryptography;
 using ICSharpCode.SharpZipLib.Zip.Compression;
+using System.Linq;
 
 namespace PNG_Reader_2
 {
@@ -38,25 +39,51 @@ namespace PNG_Reader_2
             string filePath2 = Path.Combine(fileDir, "data\\decrypted.png");
 
             byte[] encryptedData;
-            //byte[] decryptedData;
+            byte[] decryptedData;
 
             BinaryWriter EncryptedPicture = new BinaryWriter(File.OpenWrite(filePath));
-            //BinaryWriter DecryptedPicture = new BinaryWriter(File.OpenWrite(filePath2));
+            BinaryWriter DecryptedPicture = new BinaryWriter(File.OpenWrite(filePath2));
 
             EncryptedPicture.Write(signs.bytePNG_sign);
-            //DecryptedPicture.Write(signs.bytePNG_sign);
+            DecryptedPicture.Write(signs.bytePNG_sign);
 
             while (chunksToEncrypt.Count != 0)
             {
                 var c = chunksToEncrypt.Dequeue();
-                if(c.sign == "IDAT" )
+                if (c.sign == "IDAT")
                 {
+                    List<Byte[]> divided = new List<Byte[]>();
+                    List<Byte[]> encrypted = new List<Byte[]>();
+                    List<Byte[]> decrypted = new List<Byte[]>();
+                    byte[] data = c.ReturnData();
+                    
+                    for(int i=0; i<data.Length; i+=100)
+                    {
+                        List<byte> bytes = new List<byte>();
+                        for(int j=i; j<i+100 && j<data.Length; j++)
+                        {
+                            bytes.Add(data[j]);
+                        }
+                        divided.Add(bytes.ToArray());
+                    }
                     using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
                     {
-                        Console.WriteLine(RSA.KeySize);
-                        encryptedData = Encrypt(c.ReturnData(), RSA.ExportParameters(false));
-                        //decryptedData = Decrypt(encryptedData, RSA.ExportParameters(true));
+                        foreach (byte[] b in divided)
+                        {
+                            byte[] encryptedBlock = RSAEncrypt(b, RSA.ExportParameters(false), false);
+                            encrypted.Add(encryptedBlock);
+                            decrypted.Add(RSADecrypt(encryptedBlock ,RSA.ExportParameters(true), false));
+                        }
                     }
+                    encryptedData = encrypted.SelectMany(a => a).ToArray();
+                    decryptedData = decrypted.SelectMany(a => a).ToArray();
+
+                    Console.WriteLine("{0} {1}", data.Length, decryptedData.Length);
+                    Console.WriteLine("\n\n\n");
+                    foreach (byte b in data) Console.Write(b);
+                    Console.WriteLine("\n\n\n");
+                    foreach (byte b in decryptedData) Console.Write(b);
+
                     Deflater defl = new Deflater();
                     defl.SetInput(encryptedData);
                     defl.SetLevel(((IDAT)c).compression.FLEVEL);
@@ -68,145 +95,84 @@ namespace PNG_Reader_2
                     EncryptedPicture.Write(compressedData);
                     EncryptedPicture.Write(c.byteCheckSum);
 
-                    //DecryptedPicture.Write(BitConverter.GetBytes(decryptedData.Length));
-                    //DecryptedPicture.Write(c.byteSign);
-                    //DecryptedPicture.Write(decryptedData);
-                    //DecryptedPicture.Write(c.byteCheckSum);
+                    Deflater deflde = new Deflater();
+                    deflde.SetInput(decryptedData);
+                    deflde.SetLevel(((IDAT)c).compression.FLEVEL);
+                    byte[] compressedDataDe = new byte[100000];
+                    deflde.Deflate(compressedDataDe);
+
+                    DecryptedPicture.Write(BitConverter.GetBytes(compressedDataDe.Length));
+                    DecryptedPicture.Write(c.byteSign);
+                    DecryptedPicture.Write(compressedDataDe);
+                    DecryptedPicture.Write(c.byteCheckSum);
                 }
                 else
                 {
                     c.Write(EncryptedPicture);
-                    //c.Write(DecryptedPicture);
+                    c.Write(DecryptedPicture);
                 }
             }
             EncryptedPicture.Close();
-            //DecryptedPicture.Close();
+            DecryptedPicture.Close();
         }
 
-        public static byte[] Encrypt(byte[] encryptThis, RSAParameters publicKeyInfo)
+        public static byte[] RSAEncrypt(byte[] DataToEncrypt, RSAParameters RSAKeyInfo, bool DoOAEPPadding)
         {
-            //// Our bytearray to hold all of our data after the encryption
-            byte[] encryptedBytes = new byte[0];
-            using (var RSA = new RSACryptoServiceProvider())
+            try
             {
-                try
-                { 
-                    RSA.ImportParameters(publicKeyInfo);
-
-                    int blockSize = (RSA.KeySize / 8) - 32;
-
-                    //// buffer to write byte sequence of the given block_size
-                    byte[] buffer = new byte[blockSize];
-
-                    byte[] encryptedBuffer = new byte[blockSize];
-
-                    //// Initializing our encryptedBytes array to a suitable size, depending on the size of data to be encrypted
-                    encryptedBytes = new byte[encryptThis.Length + blockSize - (encryptThis.Length % blockSize) + 32];
-
-                    for (int i = 0; i < encryptThis.Length; i += blockSize)
-                    {
-                        //// If there is extra info to be parsed, but not enough to fill out a complete bytearray, fit array for last bit of data
-                        if (2 * i > encryptThis.Length && ((encryptThis.Length - i) % blockSize != 0))
-                        {
-                            buffer = new byte[encryptThis.Length - i];
-                            blockSize = encryptThis.Length - i;
-                        }
-
-                        //// If the amount of bytes we need to decrypt isn't enough to fill out a block, only decrypt part of it
-                        if (encryptThis.Length < blockSize)
-                        {
-                            buffer = new byte[encryptThis.Length];
-                            blockSize = encryptThis.Length;
-                        }
-
-                        //// encrypt the specified size of data, then add to final array.
-                        Buffer.BlockCopy(encryptThis, i, buffer, 0, blockSize);
-                        encryptedBuffer = RSA.Encrypt(buffer, false);
-                        encryptedBuffer.CopyTo(encryptedBytes, i);
-                    }
-                }
-                catch (CryptographicException e)
+                byte[] encryptedData;
+                //Create a new instance of RSACryptoServiceProvider.
+                using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
                 {
-                    Console.Write(e);
+
+                    //Import the RSA Key information. This only needs
+                    //toinclude the public key information.
+                    RSA.ImportParameters(RSAKeyInfo);
+
+                    //Encrypt the passed byte array and specify OAEP padding.  
+                    //OAEP padding is only available on Microsoft Windows XP or
+                    //later.  
+                    encryptedData = RSA.Encrypt(DataToEncrypt, DoOAEPPadding);
                 }
-                finally
-                {
-                    //// Clear the RSA key container, deleting generated keys.
-                    RSA.PersistKeyInCsp = false;
-                }
+                return encryptedData;
             }
-            //// Convert the byteArray using Base64 and returns as an encrypted string
-            return encryptedBytes;
+            //Catch and display a CryptographicException  
+            //to the console.
+            catch (CryptographicException e)
+            {
+                Console.WriteLine(e.Message);
+
+                return null;
+            }
         }
-
-        /// <summary>
-        /// Decrypt this message using this key
-        /// </summary>
-        /// <param name="dataToDecrypt">
-        /// The data To decrypt.
-        /// </param>
-        /// <param name="privateKeyInfo">
-        /// The private Key Info.
-        /// </param>
-        /// <returns>
-        /// The decrypted data.
-        /// </returns>
-        /*public static byte[] Decrypt(byte[] bytesToDecrypt, RSAParameters privateKeyInfo)
+        public static byte[] RSADecrypt(byte[] DataToDecrypt, RSAParameters RSAKeyInfo, bool DoOAEPPadding)
         {
-            //// The bytearray to hold all of our data after decryption
-            byte[] decryptedBytes;
-
-            //Create a new instance of RSACryptoServiceProvider.
-            using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
+            try
             {
-                try
+                byte[] decryptedData;
+                //Create a new instance of RSACryptoServiceProvider.
+                using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
                 {
-                    //// Import the private key info
-                    RSA.ImportParameters(privateKeyInfo);
+                    //Import the RSA Key information. This needs
+                    //to include the private key information.
+                    RSA.ImportParameters(RSAKeyInfo);
 
-                    //// No need to subtract padding size when decrypting (OR do I?)
-                    int blockSize = RSA.KeySize / 8;
-
-                    //// buffer to write byte sequence of the given block_size
-                    byte[] buffer = new byte[blockSize];
-
-                    //// buffer containing decrypted information
-                    byte[] decryptedBuffer = new byte[blockSize];
-
-                    //// Initializes our array to make sure it can hold at least the amount needed to decrypt.
-                    decryptedBytes = new byte[bytesToDecrypt.Length];
-
-                    for (int i = 0; i < bytesToDecrypt.Length; i += blockSize)
-                    {
-                        if (2 * i > bytesToDecrypt.Length && ((bytesToDecrypt.Length - i) % blockSize != 0))
-                        {
-                            buffer = new byte[bytesToDecrypt.Length - i];
-                            blockSize = bytesToDecrypt.Length - i;
-                        }
-
-                        //// If the amount of bytes we need to decrypt isn't enough to fill out a block, only decrypt part of it
-                        if (bytesToDecrypt.Length < blockSize)
-                        {
-                            buffer = new byte[bytesToDecrypt.Length];
-                            blockSize = bytesToDecrypt.Length;
-                        }
-
-                        Buffer.BlockCopy(bytesToDecrypt, i, buffer, 0, blockSize);
-                        decryptedBuffer = RSA.Decrypt(buffer, false);
-                        decryptedBuffer.CopyTo(decryptedBytes, i);
-                    }
+                    //Decrypt the passed byte array and specify OAEP padding.  
+                    //OAEP padding is only available on Microsoft Windows XP or
+                    //later.  
+                    decryptedData = RSA.Decrypt(DataToDecrypt, DoOAEPPadding);
                 }
-                finally
-                {
-                    //// Clear the RSA key container, deleting generated keys.
-                    RSA.PersistKeyInCsp = false;
-                }
+                return decryptedData;
             }
+            //Catch and display a CryptographicException  
+            //to the console.
+            catch (CryptographicException e)
+            {
+                Console.WriteLine(e.ToString());
 
-            //// We encode each byte with UTF8 and then write to a string while trimming off the extra empty data created by the overhead.
-            return decryptedBytes;
-
-        }*/
+                return null;
+            }
+        }
 
         public static void ProgramMenu()
         {
