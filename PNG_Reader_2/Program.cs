@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Drawing.Imaging;
 using AForge.Imaging;
 using System.Security.Cryptography;
+using ICSharpCode.SharpZipLib.Zip.Compression;
 
 namespace PNG_Reader_2
 {
@@ -56,12 +57,16 @@ namespace PNG_Reader_2
                         encryptedData = Encrypt(c.ReturnData(), RSA.ExportParameters(false));
                         //decryptedData = Decrypt(encryptedData, RSA.ExportParameters(true));
                     }
-                    EncryptedPicture.Write(BitConverter.GetBytes(encryptedData.Length));
+                    Deflater defl = new Deflater();
+                    defl.SetInput(encryptedData);
+                    defl.SetLevel(((IDAT)c).compression.FLEVEL);
+                    byte[] compressedData = new byte[100000];
+                    defl.Deflate(compressedData);
+
+                    EncryptedPicture.Write(BitConverter.GetBytes(compressedData.Length));
                     EncryptedPicture.Write(c.byteSign);
-                    EncryptedPicture.Write(encryptedData);
+                    EncryptedPicture.Write(compressedData);
                     EncryptedPicture.Write(c.byteCheckSum);
-
-
 
                     //DecryptedPicture.Write(BitConverter.GetBytes(decryptedData.Length));
                     //DecryptedPicture.Write(c.byteSign);
