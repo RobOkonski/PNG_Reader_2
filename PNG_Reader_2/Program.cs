@@ -37,13 +37,13 @@ namespace PNG_Reader_2
             string filePath2 = Path.Combine(fileDir, "data\\decrypted.png");
 
             byte[] encryptedData;
-            byte[] decryptedData;
+            //byte[] decryptedData;
 
             BinaryWriter EncryptedPicture = new BinaryWriter(File.OpenWrite(filePath));
-            BinaryWriter DecryptedPicture = new BinaryWriter(File.OpenWrite(filePath2));
+            //BinaryWriter DecryptedPicture = new BinaryWriter(File.OpenWrite(filePath2));
 
             EncryptedPicture.Write(signs.bytePNG_sign);
-            DecryptedPicture.Write(signs.bytePNG_sign);
+            //DecryptedPicture.Write(signs.bytePNG_sign);
 
             while (chunksToEncrypt.Count != 0)
             {
@@ -54,26 +54,28 @@ namespace PNG_Reader_2
                     {
                         Console.WriteLine(RSA.KeySize);
                         encryptedData = Encrypt(c.ReturnData(), RSA.ExportParameters(false));
-                        decryptedData = Decrypt(encryptedData, RSA.ExportParameters(true));
+                        //decryptedData = Decrypt(encryptedData, RSA.ExportParameters(true));
                     }
                     EncryptedPicture.Write(BitConverter.GetBytes(encryptedData.Length));
                     EncryptedPicture.Write(c.byteSign);
                     EncryptedPicture.Write(encryptedData);
                     EncryptedPicture.Write(c.byteCheckSum);
 
-                    DecryptedPicture.Write(BitConverter.GetBytes(decryptedData.Length));
-                    DecryptedPicture.Write(c.byteSign);
-                    DecryptedPicture.Write(decryptedData);
-                    DecryptedPicture.Write(c.byteCheckSum);
+
+
+                    //DecryptedPicture.Write(BitConverter.GetBytes(decryptedData.Length));
+                    //DecryptedPicture.Write(c.byteSign);
+                    //DecryptedPicture.Write(decryptedData);
+                    //DecryptedPicture.Write(c.byteCheckSum);
                 }
                 else
                 {
                     c.Write(EncryptedPicture);
-                    c.Write(DecryptedPicture);
+                    //c.Write(DecryptedPicture);
                 }
             }
             EncryptedPicture.Close();
-            DecryptedPicture.Close();
+            //DecryptedPicture.Close();
         }
 
         public static byte[] Encrypt(byte[] encryptThis, RSAParameters publicKeyInfo)
@@ -144,7 +146,7 @@ namespace PNG_Reader_2
         /// <returns>
         /// The decrypted data.
         /// </returns>
-        public static byte[] Decrypt(byte[] bytesToDecrypt, RSAParameters privateKeyInfo)
+        /*public static byte[] Decrypt(byte[] bytesToDecrypt, RSAParameters privateKeyInfo)
         {
             //// The bytearray to hold all of our data after decryption
             byte[] decryptedBytes;
@@ -199,7 +201,7 @@ namespace PNG_Reader_2
             //// We encode each byte with UTF8 and then write to a string while trimming off the extra empty data created by the overhead.
             return decryptedBytes;
 
-        }
+        }*/
 
         public static void ProgramMenu()
         {

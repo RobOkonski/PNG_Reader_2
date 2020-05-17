@@ -2,6 +2,9 @@
 using ICSharpCode.SharpZipLib.Zip.Compression;
 using System.Linq;
 using System.IO;
+using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
+using System.IO.Compression;
+//using ComponentAce.Compression.Libs.zlib;
 
 namespace PNG_Reader_2
 {
@@ -20,12 +23,14 @@ namespace PNG_Reader_2
             sign = chunk.sign;
             number = idatQuantity;
 
-            Inflater infl = new Inflater();
+            /*Inflater infl = new Inflater();
             infl.SetInput(byteData);
             byte[] decompressedByteData = new byte[100000];
             infl.Inflate(decompressedByteData);
 
-            decopressedData = decompressedByteData;
+            decopressedData = decompressedByteData;*/
+
+            decopressedData = Decompress(byteData);
 
             if (idatQuantity==1)
             {
@@ -42,6 +47,8 @@ namespace PNG_Reader_2
                 compression.Display();
             }
             Console.WriteLine(" - {0}. byteLength: {1}", number, length);
+
+            Console.WriteLine("{0} {1}", byteData.Length, decopressedData.Length);
         }
 
         public override void Write(BinaryWriter NewPicture)
@@ -53,8 +60,10 @@ namespace PNG_Reader_2
             defl.Deflate(compressedData);
             //byte[] data = compressedData.Where(x => x != 0).ToArray();
 
-            /*Console.WriteLine("{0} {1}",compressedData.Length, decopressedData.Length);
-            foreach (byte b in compressedData) Console.Write(b);
+            //byte[] compressedData = Compress(decopressedData);
+
+            Console.WriteLine("{0} {1}",compressedData.Length, byteData.Length);
+            /*foreach (byte b in compressedData) Console.Write(b);
             Console.WriteLine("\n\n");
             foreach (byte b in byteData) Console.Write(b);
             Console.WriteLine("");*/
@@ -63,11 +72,41 @@ namespace PNG_Reader_2
             NewPicture.Write(byteSign);
             NewPicture.Write(compressedData);
             NewPicture.Write(byteCheckSum);
+            
         }
 
         public override byte[] ReturnData()
         {
             return decopressedData;
         }
+
+        public byte[] Decompress(byte[] data)
+        {
+            var outputStream = new MemoryStream();
+            byte[] decompressedData;
+            using (var compressedStream = new MemoryStream(data))
+            using (var inputStream = new InflaterInputStream(compressedStream))
+            {
+                inputStream.CopyTo(outputStream);
+                outputStream.Position = 0;
+                decompressedData = outputStream.ToArray();
+                return decompressedData;
+            }
+        }
+
+        /*public byte[] Compress(byte[] data)
+        {
+            Deflater defl = new Deflater(0,false);
+            var decompressedStream = new MemoryStream(data);
+            byte[] compressedData;
+            using (var outputStream = new MemoryStream())
+            using (var inputStream = new DeflaterOutputStream(outputStream,defl))
+            {
+                decompressedStream.CopyTo(inputStream);
+                outputStream.Position = 0;
+                compressedData = outputStream.ToArray();
+                return compressedData;
+            }
+        }*/
     }
 }
