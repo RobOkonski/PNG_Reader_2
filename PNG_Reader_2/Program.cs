@@ -19,7 +19,7 @@ namespace PNG_Reader_2
             PNG_signs signs = new PNG_signs();
             Queue<Chunk> chunks = new Queue<Chunk>();
             Queue<Chunk> chunksToWrite = new Queue<Chunk>();
-            Queue<Chunk> chunksToEncrypt = new Queue<Chunk>();
+            List<Chunk> chunksToEncrypt = new List<Chunk>();
 
             string fileName = ChoosePicture();
             string newFileName = "data\\test.png";
@@ -35,7 +35,7 @@ namespace PNG_Reader_2
         /// Build-in RSA                                                             ///
         ////////////////////////////////////////////////////////////////////////////////
         
-        public static void MakeRSA(Queue<Chunk> chunksToEncrypt, PNG_signs signs)
+        public static void BuildInRSA(List<Chunk> chunksToEncrypt, PNG_signs signs)
         {
             string fileDir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
             string filePath = Path.Combine(fileDir, "data\\encrypted.png");
@@ -50,9 +50,8 @@ namespace PNG_Reader_2
             EncryptedPicture.Write(signs.bytePNG_sign);
             DecryptedPicture.Write(signs.bytePNG_sign);
 
-            while (chunksToEncrypt.Count != 0)
+            foreach(Chunk c in chunksToEncrypt)
             {
-                var c = chunksToEncrypt.Dequeue();
                 if (c.sign == "IDAT")
                 {
                     List<Byte[]> divided = new List<Byte[]>();
@@ -187,7 +186,7 @@ namespace PNG_Reader_2
             Console.WriteLine("");
         }
 
-        public static bool Execute(PNG_signs signs, Queue<Chunk> chunks, Queue<Chunk> chunksToWrite, Queue<Chunk> chunksToEncrypt, string fileName, string newFileName)
+        public static bool Execute(PNG_signs signs, Queue<Chunk> chunks, Queue<Chunk> chunksToWrite, List<Chunk> chunksToEncrypt, string fileName, string newFileName)
         {
             string schoice;
             int choice = 0;
@@ -215,7 +214,7 @@ namespace PNG_Reader_2
                     MakeFFT(fileName);
                     break;
                 case 5:
-                    MakeRSA(chunksToEncrypt, signs);
+                    BuildInRSA(chunksToEncrypt, signs);
                     break;
                 case 6:
                     return true;
@@ -414,7 +413,7 @@ namespace PNG_Reader_2
             NewPicture.Close();
         }
 
-        public static void Read(PNG_signs signs, Queue<Chunk> chunks, Queue<Chunk> chunksToWrite, Queue<Chunk> chunksToEncrypt, string fileName)
+        public static void Read(PNG_signs signs, Queue<Chunk> chunks, Queue<Chunk> chunksToWrite, List<Chunk> chunksToEncrypt, string fileName)
         {
             string fileDir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
             string filePath = Path.Combine(fileDir, fileName);
@@ -439,14 +438,14 @@ namespace PNG_Reader_2
                     IHDR ihdr = new IHDR(chunk);
                     chunks.Enqueue(ihdr);
                     chunksToWrite.Enqueue(ihdr);
-                    chunksToEncrypt.Enqueue(ihdr);
+                    chunksToEncrypt.Add(ihdr);
                 }
                 else if (chunk.sign == "PLTE")
                 {
                     PLTE plte = new PLTE(chunk);
                     chunks.Enqueue(plte);
                     chunksToWrite.Enqueue(plte);
-                    chunksToEncrypt.Enqueue(plte);
+                    chunksToEncrypt.Add(plte);
                 }
                 else if (chunk.sign == "IDAT")
                 {
@@ -454,44 +453,44 @@ namespace PNG_Reader_2
                     IDAT idat = new IDAT(chunk,idatQuantity);
                     chunks.Enqueue(idat);
                     chunksToWrite.Enqueue(idat);
-                    chunksToEncrypt.Enqueue(idat);
+                    chunksToEncrypt.Add(idat);
                 }
                 else if (chunk.sign == "IEND")
                 {
                     IEND iend = new IEND(chunk);
                     chunks.Enqueue(iend);
                     chunksToWrite.Enqueue(iend);
-                    chunksToEncrypt.Enqueue(iend);
+                    chunksToEncrypt.Add(iend);
                     endOfFile = false;
                 }
                 else if (chunk.sign == "gAMA")
                 {
                     gAMA gama = new gAMA(chunk);
                     chunks.Enqueue(gama);
-                    chunksToEncrypt.Enqueue(gama);
+                    chunksToEncrypt.Add(gama);
                 }
                 else if (chunk.sign == "cHRM")
                 {
                     cHRM chrm = new cHRM(chunk);
                     chunks.Enqueue(chrm);
-                    chunksToEncrypt.Enqueue(chrm);
+                    chunksToEncrypt.Add(chrm);
                 }
                 else if (chunk.sign == "zTXt")
                 {
                     zTXt ztxt = new zTXt(chunk);
                     chunks.Enqueue(ztxt);
-                    chunksToEncrypt.Enqueue(ztxt);
+                    chunksToEncrypt.Add(ztxt);
                 }
                 else if (chunk.sign == "tEXt")
                 {
                     tEXt text = new tEXt(chunk);
                     chunks.Enqueue(text);
-                    chunksToEncrypt.Enqueue(text);
+                    chunksToEncrypt.Add(text);
                 }
                 else
                 {
                     chunks.Enqueue(chunk);
-                    chunksToEncrypt.Enqueue(chunk);
+                    chunksToEncrypt.Add(chunk);
                 }
 
             } while (endOfFile);
