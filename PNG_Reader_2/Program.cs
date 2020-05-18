@@ -31,7 +31,10 @@ namespace PNG_Reader_2
                 end = Execute(signs, chunks, chunksToWrite, chunksToEncrypt, fileName, newFileName);
             }
         }
-
+        ////////////////////////////////////////////////////////////////////////////////
+        /// Build-in RSA                                                             ///
+        ////////////////////////////////////////////////////////////////////////////////
+        
         public static void MakeRSA(Queue<Chunk> chunksToEncrypt, PNG_signs signs)
         {
             string fileDir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
@@ -168,6 +171,10 @@ namespace PNG_Reader_2
             }
         }
 
+        /////////////////////////////////////////////////////////////////////////////////////////
+        /// Menu and choice                                                                   ///
+        /////////////////////////////////////////////////////////////////////////////////////////
+
         public static void ProgramMenu()
         {
             Console.WriteLine("\n---   MENU   ---\n");
@@ -290,6 +297,10 @@ namespace PNG_Reader_2
             return fileName;
         }
 
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// FFT                                                                                          ///
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+
         public static int PowerOf2(int x)
         {
             int y=2;
@@ -360,6 +371,10 @@ namespace PNG_Reader_2
             cloneBitmap.SetResolution(500.0F, 500.0F);
             return cloneBitmap;
         }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////
+        /// Picture services                                                                        ///
+        ///////////////////////////////////////////////////////////////////////////////////////////////
 
         public static void DisplayImage(string fileName)
         {
