@@ -8,6 +8,7 @@ using AForge.Imaging;
 using System.Security.Cryptography;
 using ICSharpCode.SharpZipLib.Zip.Compression;
 using System.Linq;
+using System.Numerics;
 
 namespace PNG_Reader_2
 {
@@ -37,6 +38,8 @@ namespace PNG_Reader_2
         
         public static void BuildInRSA(List<Chunk> chunksToEncrypt, PNG_signs signs)
         {
+            BigInteger n, e, d;
+
             string fileDir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
             string filePath = Path.Combine(fileDir, "data\\encrypted.png");
             string filePath2 = Path.Combine(fileDir, "data\\decrypted.png");
@@ -70,6 +73,9 @@ namespace PNG_Reader_2
                     }
                     using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
                     {
+                        n = new BigInteger(RSA.ExportParameters(false).Modulus.Reverse().ToArray(), true);
+                        e = new BigInteger(RSA.ExportParameters(false).Exponent.Reverse().ToArray(), true);
+                        d = new BigInteger(RSA.ExportParameters(true).D.Reverse().ToArray(), true);
                         foreach (byte[] b in divided)
                         {
                             byte[] encryptedBlock = RSAEncrypt(b, RSA.ExportParameters(false), false);
@@ -197,7 +203,7 @@ namespace PNG_Reader_2
                 schoice = (Console.ReadLine());
                 Console.WriteLine("");
                 Int32.TryParse(schoice, out choice);
-            } while (choice < 1 || choice > 5);
+            } while (choice < 1 || choice > 6);
 
             switch (choice)
             {
