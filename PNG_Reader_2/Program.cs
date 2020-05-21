@@ -82,6 +82,7 @@ namespace PNG_Reader_2
                         }
                         divided.Add(bytes.ToArray());
                     }
+
                     using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
                     {
                         n = new BigInteger(RSA.ExportParameters(false).Modulus.Reverse().ToArray(), true);
@@ -97,22 +98,14 @@ namespace PNG_Reader_2
                     encryptedData = encrypted.SelectMany(a => a).ToArray();
                     decryptedData = decrypted.SelectMany(a => a).ToArray();
 
-                    Deflater defl = new Deflater();
-                    defl.SetInput(encryptedData);
-                    defl.SetLevel(((IDAT)c).compression.FLEVEL);
-                    byte[] compressedData = new byte[100000];
-                    defl.Deflate(compressedData);
+                    byte[] compressedData = Compress(encryptedData, ((IDAT)c).compression.FLEVEL);
 
                     EncryptedPicture.Write(BitConverter.GetBytes(compressedData.Length));
                     EncryptedPicture.Write(c.byteSign);
                     EncryptedPicture.Write(compressedData);
                     EncryptedPicture.Write(c.byteCheckSum);
 
-                    Deflater deflde = new Deflater();
-                    deflde.SetInput(decryptedData);
-                    deflde.SetLevel(((IDAT)c).compression.FLEVEL);
-                    byte[] compressedDataDe = new byte[100000];
-                    deflde.Deflate(compressedDataDe);
+                    byte[] compressedDataDe = Compress(decryptedData, ((IDAT)c).compression.FLEVEL);
 
                     DecryptedPicture.Write(BitConverter.GetBytes(compressedDataDe.Length));
                     DecryptedPicture.Write(c.byteSign);
@@ -121,18 +114,40 @@ namespace PNG_Reader_2
 
                     foreach(byte[] b  in divided)
                     {
+                        
+                        bool test = false;
                         BigInteger intData = new BigInteger(b);
+                        if(intData.Sign==-1)
+                        {
+                            test = true;
+                        }
+                        intData = new BigInteger(b, true);
                         BigInteger intEncrypted = BigInteger.ModPow(intData,e,n);
                         BigInteger intDecrypted = BigInteger.ModPow(intEncrypted, d, n);
                         encryptedECB.Add(intEncrypted.ToByteArray());
                         byte[] temp = new byte[blockSize];
-                        byte[] temp2 = intDecrypted.ToByteArray();
-                        int l = blockSize - temp2.Length;
+                        byte[] temp2;
+                        if (test)
+                        {
+                            byte[] temp3 = intDecrypted.ToByteArray();
+                            temp2 = new byte[temp3.Length - 1];
+                            for(int i=0; i<temp3.Length-1; i++)
+                            {
+                                temp2[i] = temp3[i];
+                            }
+                        }
+                        else
+                        {
+                            temp2 = intDecrypted.ToByteArray();
+                        }
+
+                        int l = b.Length - temp2.Length;
+
                         if (l != 0)
                         {
                             foreach (byte by in temp2)
                             {
-                                temp[l] = by;
+                                temp[l-1] = by;
                                 l++;
                             }
                             decryptedECB.Add(temp);
@@ -145,22 +160,14 @@ namespace PNG_Reader_2
                     encryptedECBData = encryptedECB.SelectMany(a => a).ToArray();
                     decryptedECBData = decryptedECB.SelectMany(a => a).ToArray();
 
-                    Deflater deflECB = new Deflater();
-                    deflECB.SetInput(encryptedECBData);
-                    deflECB.SetLevel(((IDAT)c).compression.FLEVEL);
-                    byte[] compressedDataECB = new byte[100000];
-                    deflECB.Deflate(compressedDataECB);
+                    byte[] compressedDataECB = Compress(encryptedECBData, ((IDAT)c).compression.FLEVEL);
 
                     ECBEncryptedPicture.Write(BitConverter.GetBytes(compressedDataECB.Length));
                     ECBEncryptedPicture.Write(c.byteSign);
                     ECBEncryptedPicture.Write(compressedDataECB);
                     ECBEncryptedPicture.Write(c.byteCheckSum);
 
-                    Deflater deflECBde = new Deflater();
-                    deflECBde.SetInput(decryptedECBData);
-                    deflECBde.SetLevel(((IDAT)c).compression.FLEVEL);
-                    byte[] compressedDataECBde = new byte[100000];
-                    deflECBde.Deflate(compressedDataECBde);
+                    byte[] compressedDataECBde = Compress(decryptedECBData, ((IDAT)c).compression.FLEVEL);
 
                     ECBDecryptedPicture.Write(BitConverter.GetBytes(compressedDataECBde.Length));
                     ECBDecryptedPicture.Write(c.byteSign);
@@ -237,6 +244,21 @@ namespace PNG_Reader_2
 
                 return null;
             }
+        }
+
+        /////////////////////////////////////////////////////////////////////////////////////////
+        /// Compression                                                                       ///
+        /////////////////////////////////////////////////////////////////////////////////////////
+        
+        public static byte[] Compress(byte[] data, int compressionLevel)
+        {
+            Deflater defl = new Deflater();
+            defl.SetInput(data);
+            defl.SetLevel(compressionLevel);
+            byte[] compressedData = new byte[100000];
+            defl.Deflate(compressedData);
+
+            return compressedData;
         }
 
         /////////////////////////////////////////////////////////////////////////////////////////
