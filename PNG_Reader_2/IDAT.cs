@@ -4,7 +4,6 @@ using System.Linq;
 using System.IO;
 using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 using System.IO.Compression;
-//using ComponentAce.Compression.Libs.zlib;
 
 namespace PNG_Reader_2
 {

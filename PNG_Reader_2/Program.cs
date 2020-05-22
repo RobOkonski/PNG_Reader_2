@@ -46,21 +46,29 @@ namespace PNG_Reader_2
             string filePath2 = Path.Combine(fileDir, "data\\decrypted.png");
             string ECBFilePath = Path.Combine(fileDir, "data\\encryptedECB.png");
             string ECBFilePath2 = Path.Combine(fileDir, "data\\decryptedECB.png");
+            string CBCFilePath = Path.Combine(fileDir, "data\\encryptedCBC.png");
+            string CBCFilePath2 = Path.Combine(fileDir, "data\\decryptedCBC.png");
 
             byte[] encryptedData;
             byte[] decryptedData;
             byte[] encryptedECBData;
             byte[] decryptedECBData;
+            byte[] encryptedCBCData;
+            byte[] decryptedCBCData;
 
             BinaryWriter EncryptedPicture = new BinaryWriter(File.OpenWrite(filePath));
             BinaryWriter DecryptedPicture = new BinaryWriter(File.OpenWrite(filePath2));
             BinaryWriter ECBEncryptedPicture = new BinaryWriter(File.OpenWrite(ECBFilePath));
             BinaryWriter ECBDecryptedPicture = new BinaryWriter(File.OpenWrite(ECBFilePath2));
+            BinaryWriter CBCEncryptedPicture = new BinaryWriter(File.OpenWrite(CBCFilePath));
+            BinaryWriter CBCDecryptedPicture = new BinaryWriter(File.OpenWrite(CBCFilePath2));
 
             EncryptedPicture.Write(signs.bytePNG_sign);
             DecryptedPicture.Write(signs.bytePNG_sign);
             ECBEncryptedPicture.Write(signs.bytePNG_sign);
             ECBDecryptedPicture.Write(signs.bytePNG_sign);
+            CBCEncryptedPicture.Write(signs.bytePNG_sign);
+            CBCDecryptedPicture.Write(signs.bytePNG_sign);
 
             foreach (Chunk c in chunksToEncrypt)
             {
@@ -71,6 +79,8 @@ namespace PNG_Reader_2
                     List<Byte[]> decrypted = new List<Byte[]>();
                     List<Byte[]> encryptedECB = new List<Byte[]>();
                     List<Byte[]> decryptedECB = new List<Byte[]>();
+                    List<Byte[]> encryptedCBC = new List<Byte[]>();
+                    List<Byte[]> decryptedCBC = new List<Byte[]>();
                     byte[] data = c.ReturnData();
                     
                     for(int i=0; i<data.Length; i+=blockSize)
@@ -111,6 +121,8 @@ namespace PNG_Reader_2
                     DecryptedPicture.Write(c.byteSign);
                     DecryptedPicture.Write(compressedDataDe);
                     DecryptedPicture.Write(c.byteCheckSum);
+
+                    //ECB
 
                     foreach(byte[] b  in divided)
                     {
@@ -173,6 +185,96 @@ namespace PNG_Reader_2
                     ECBDecryptedPicture.Write(c.byteSign);
                     ECBDecryptedPicture.Write(compressedDataECBde);
                     ECBDecryptedPicture.Write(c.byteCheckSum);
+
+                    //CBC
+
+                    Random rnd = new Random();
+                    byte[] initializationVector = new byte[blockSize];
+                    rnd.NextBytes(initializationVector);
+                    byte[] vector = new byte[blockSize];
+
+                    for (int j=0; j<divided.Count(); j++)
+                    {
+                        byte[] b = divided[j];
+                        byte[] xored = new byte[b.Length];
+                        if(j==0)
+                        {
+                            vector = initializationVector;  
+                        }
+
+                        for (int k = 0; k < b.Length; k++)
+                        {
+                            xored[k] = (byte)(b[k] ^ vector[k]);
+                        }
+
+                        bool test = false;
+                        BigInteger intData = new BigInteger(xored);
+                        if (intData.Sign == -1)
+                        {
+                            test = true;
+                        }
+                        intData = new BigInteger(xored, true);
+                        BigInteger intEncrypted = BigInteger.ModPow(intData, e, n);
+                        BigInteger intDecrypted = BigInteger.ModPow(intEncrypted, d, n);
+                        
+                        byte[] temp = new byte[blockSize];
+                        byte[] temp2;
+                        if (test)
+                        {
+                            byte[] temp3 = intDecrypted.ToByteArray();
+                            temp2 = new byte[temp3.Length - 1];
+                            for (int i = 0; i < temp3.Length - 1; i++)
+                            {
+                                temp2[i] = temp3[i];
+                            }
+                        }
+                        else
+                        {
+                            temp2 = intDecrypted.ToByteArray();
+                        }
+
+                        int l = b.Length - temp2.Length;
+
+                        if (l != 0)
+                        {
+                            foreach (byte by in temp2)
+                            {
+                                temp[l - 1] = by;
+                                l++;
+                            }
+                            for (int k = 0; k < b.Length; k++)
+                            {
+                                temp[k] = (byte)(temp[k] ^ vector[k]);
+                            }
+                            decryptedCBC.Add(temp);
+                        }
+                        else
+                        {
+                            for (int k = 0; k < b.Length; k++)
+                            {
+                                temp2[k] = (byte)(temp2[k] ^ vector[k]);
+                            }
+                            decryptedCBC.Add(temp2);
+                        }
+                        vector = intEncrypted.ToByteArray();
+                        encryptedCBC.Add(vector);
+                    }
+                    encryptedCBCData = encryptedCBC.SelectMany(a => a).ToArray();
+                    decryptedCBCData = decryptedCBC.SelectMany(a => a).ToArray();
+
+                    byte[] compressedDataCBC = Compress(encryptedCBCData, ((IDAT)c).compression.FLEVEL);
+
+                    CBCEncryptedPicture.Write(BitConverter.GetBytes(compressedDataCBC.Length));
+                    CBCEncryptedPicture.Write(c.byteSign);
+                    CBCEncryptedPicture.Write(compressedDataCBC);
+                    CBCEncryptedPicture.Write(c.byteCheckSum);
+
+                    byte[] compressedDataCBCde = Compress(decryptedCBCData, ((IDAT)c).compression.FLEVEL);
+
+                    CBCDecryptedPicture.Write(BitConverter.GetBytes(compressedDataCBCde.Length));
+                    CBCDecryptedPicture.Write(c.byteSign);
+                    CBCDecryptedPicture.Write(compressedDataCBCde);
+                    CBCDecryptedPicture.Write(c.byteCheckSum);
                 }
                 else
                 {
@@ -180,12 +282,16 @@ namespace PNG_Reader_2
                     c.Write(DecryptedPicture);
                     c.Write(ECBEncryptedPicture);
                     c.Write(ECBDecryptedPicture);
+                    c.Write(CBCEncryptedPicture);
+                    c.Write(CBCDecryptedPicture);
                 }
             }
             EncryptedPicture.Close();
             DecryptedPicture.Close();
             ECBEncryptedPicture.Close();
             ECBDecryptedPicture.Close();
+            CBCEncryptedPicture.Close();
+            CBCDecryptedPicture.Close();
         }
 
         public static byte[] RSAEncrypt(byte[] DataToEncrypt, RSAParameters RSAKeyInfo, bool DoOAEPPadding)
