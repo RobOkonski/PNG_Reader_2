@@ -33,10 +33,10 @@ namespace PNG_Reader_2
             }
         }
         ////////////////////////////////////////////////////////////////////////////////
-        /// Build-in RSA                                                             ///
+        /// Cryptography                                                             ///
         ////////////////////////////////////////////////////////////////////////////////
         
-        public static void BuildInRSA(List<Chunk> chunksToEncrypt, PNG_signs signs)
+        public static void EncryptDecrypt(List<Chunk> chunksToEncrypt, PNG_signs signs)
         {
             int blockSize = 64;
             BigInteger n, e, d;
@@ -378,7 +378,7 @@ namespace PNG_Reader_2
             Console.WriteLine("2. Write anonimized picture");
             Console.WriteLine("3. Display picture");
             Console.WriteLine("4. Make fft");
-            Console.WriteLine("5. Make RSA");
+            Console.WriteLine("5. Encrypt/Decrypt RSA/ECB/CBC");
             Console.WriteLine("6. End");
             Console.WriteLine("");
         }
@@ -411,7 +411,7 @@ namespace PNG_Reader_2
                     MakeFFT(fileName);
                     break;
                 case 5:
-                    BuildInRSA(chunksToEncrypt, signs);
+                    EncryptDecrypt(chunksToEncrypt, signs);
                     break;
                 case 6:
                     return true;
